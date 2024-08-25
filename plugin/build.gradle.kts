@@ -24,3 +24,7 @@ kotlin {
 
 	explicitApi()
 }
+
+dependencies {
+	implementation("com.squareup:kotlinpoet:1.17.0")
+}
