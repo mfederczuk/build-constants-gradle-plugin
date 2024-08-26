@@ -28,3 +28,12 @@ kotlin {
 dependencies {
 	implementation("com.squareup:kotlinpoet:1.17.0")
 }
+
+gradlePlugin {
+	plugins {
+		register("build-constants") {
+			id = "${project.group}.$name"
+			implementationClass = "io.github.mfederczuk.buildconstants.BuildConstantsPlugin"
+		}
+	}
+}
