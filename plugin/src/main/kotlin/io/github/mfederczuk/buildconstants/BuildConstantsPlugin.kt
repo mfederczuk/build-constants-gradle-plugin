@@ -29,6 +29,10 @@ public class BuildConstantsPlugin : Plugin<Project> {
 	override fun apply(project: Project) {
 		val extension: BuildConstantsExtension =
 			project.extensions.create<BuildConstantsExtension>(name = "buildConstants")
+		extension.objects
+			.configureEach {
+				this@configureEach.visibility.convention(Visibility.INTERNAL)
+			}
 
 		val baseOutputDirectoryProvider: Provider<Directory> = project.layout.buildDirectory
 			.dir("generated")

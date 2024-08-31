@@ -26,6 +26,7 @@ import com.squareup.kotlinpoet.U_INT
 import com.squareup.kotlinpoet.U_LONG
 import com.squareup.kotlinpoet.U_SHORT
 import io.github.mfederczuk.buildconstants.ConstantValue
+import io.github.mfederczuk.buildconstants.Visibility
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.name
@@ -33,11 +34,12 @@ import kotlin.io.path.writer
 
 internal fun generateConstantsObject(
 	packageName: PackageName,
+	visibility: Visibility,
 	objectName: String,
 	constants: Map<String, ConstantValue>,
 	outputFilePath: Path,
 ) {
-	val fileSpec: FileSpec = buildFileSpec(packageName, objectName, constants, outputFilePath)
+	val fileSpec: FileSpec = buildFileSpec(packageName, visibility, objectName, constants, outputFilePath)
 
 	outputFilePath.parent?.createDirectories()
 	outputFilePath.writer()
@@ -46,6 +48,7 @@ internal fun generateConstantsObject(
 
 private fun buildFileSpec(
 	packageName: PackageName,
+	visibility: Visibility,
 	objectName: String,
 	constants: Map<String, ConstantValue>,
 	outputFilePath: Path,
@@ -57,7 +60,7 @@ private fun buildFileSpec(
 		.addMember("%S", "ConstPropertyName")
 		.build()
 
-	val objectTypeSpec: TypeSpec = buildConstantsObjectTypeSpec(objectName, constants)
+	val objectTypeSpec: TypeSpec = buildConstantsObjectTypeSpec(visibility, objectName, constants)
 
 	return FileSpec.builder(packageName.toString(), outputFilePath.name)
 		.addFileComment("Generated code; DO NOT EDIT!")
@@ -67,6 +70,7 @@ private fun buildFileSpec(
 }
 
 private fun buildConstantsObjectTypeSpec(
+	visibility: Visibility,
 	objectName: String,
 	constants: Map<String, ConstantValue>,
 ): TypeSpec {
@@ -77,7 +81,14 @@ private fun buildConstantsObjectTypeSpec(
 				.build()
 		}
 
+	val visibilityModifier: KModifier =
+		when (visibility) {
+			Visibility.PUBLIC -> KModifier.PUBLIC
+			Visibility.INTERNAL -> KModifier.INTERNAL
+		}
+
 	return TypeSpec.objectBuilder(objectName)
+		.addModifiers(visibilityModifier)
 		.addProperties(propertySpecs)
 		.build()
 }

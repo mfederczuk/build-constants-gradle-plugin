@@ -30,6 +30,9 @@ public abstract class ConstantsObjectGenerationTask : DefaultTask() {
 	public abstract val packageName: Property<String>
 
 	@get:Input
+	public abstract val visibility: Property<Visibility>
+
+	@get:Input
 	public abstract val objectName: Property<String>
 
 	@get:Input
@@ -46,11 +49,12 @@ public abstract class ConstantsObjectGenerationTask : DefaultTask() {
 			"Invalid package name ${packageNameString.quoted()}"
 		}
 
+		val visibility: Visibility = this.visibility.get()
 		val objectName: String = this.objectName.get()
 		val constants: Map<String, ConstantValue> = this.constants.get()
 
 		val outputFilePath: Path = this.outputFile.asFile.get().toPath()
 
-		generateConstantsObject(packageName, objectName, constants, outputFilePath)
+		generateConstantsObject(packageName, visibility, objectName, constants, outputFilePath)
 	}
 }

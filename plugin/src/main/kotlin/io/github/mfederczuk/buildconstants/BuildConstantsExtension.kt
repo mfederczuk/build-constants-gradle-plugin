@@ -48,6 +48,12 @@ public interface BuildConstantsExtension {
 		public val packageName: Property<String>
 
 		/**
+		 * The visibility of the generated Kotlin object.
+		 * The default is `internal`.
+		 */
+		public val visibility: Property<Visibility>
+
+		/**
 		 * The name of the generated Kotlin object.
 		 *
 		 * @see packageName

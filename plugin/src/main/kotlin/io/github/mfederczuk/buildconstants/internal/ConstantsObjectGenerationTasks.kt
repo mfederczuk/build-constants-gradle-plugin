@@ -42,6 +42,7 @@ internal object ConstantsObjectGenerationTasks {
 				}
 
 			this@register.packageName.set(packageNameProvider.map(PackageName::toString))
+			this@register.visibility.set(constantsObject.visibility)
 			this@register.objectName.set(constantsObject.objectName)
 			this@register.constants.set(constantsProvider)
 			this@register.outputFile.convention(outputFileProvider)
