@@ -5,3 +5,4 @@
 rootProject.name = "build-constants"
 
 includeBuild("plugin")
+includeBuild("demo")
