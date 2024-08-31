@@ -13,6 +13,11 @@
 This is a simple [Gradle] plugin to generate Kotlin constants during build time, similar to
 [Android's `BuildConfig` class][android_buildconfig].
 
+All constants are put inside top-level Kotlin objects.  
+Objects and their constants are configured in the Gradle build scripts and will be generated before the main Kotlin
+source code gets compiled.  
+Package, visibility and name of the generated Kotlin objects are configurable.
+
 [Gradle]: <https://gradle.org/> "Gradle Build Tool"
 [android_buildconfig]: <https://developer.android.com/build/gradle-tips#share-custom-fields-and-resource-values-with-your-app-code> "Gradle tips and recipes &nbsp;|&nbsp; Android Studio &nbsp;|&nbsp; Android Developers"
 
