@@ -26,6 +26,10 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 
 public class BuildConstantsPlugin : Plugin<Project> {
 
+	private companion object {
+		val EXTERNAL_DEPENDANT_TASK_NAMES: Set<String> = hashSetOf("compileKotlin", "sourcesJar", "kotlinSourcesJar")
+	}
+
 	override fun apply(project: Project) {
 		val extension: BuildConstantsExtension =
 			project.extensions.create<BuildConstantsExtension>(name = "buildConstants")
@@ -79,7 +83,7 @@ public class BuildConstantsPlugin : Plugin<Project> {
 				baseOutputDirectoryProvider,
 			)
 
-		project.tasks.addCompileKotlinDependency(constantsObjectGenerationTaskProvider)
+		project.tasks.addAsDependencyToExternalTasks(constantsObjectGenerationTaskProvider)
 
 		project.tasks.named<Delete>("clean") {
 			this@named.delete(constantsObjectGenerationTaskProvider)
@@ -90,13 +94,17 @@ public class BuildConstantsPlugin : Plugin<Project> {
 		val constantsObjectsGenerationTaskProvider: TaskProvider<Task> =
 			ConstantsObjectsGenerationTask.registerIn(taskContainer = project.tasks)
 
-		project.tasks.addCompileKotlinDependency(constantsObjectsGenerationTaskProvider)
+		project.tasks.addAsDependencyToExternalTasks(constantsObjectsGenerationTaskProvider)
 	}
-}
 
-private fun TaskContainer.addCompileKotlinDependency(taskProvider: TaskProvider<out Task>) {
-	this.named("compileKotlin") {
-		this@named.dependsOn(taskProvider)
+	private fun TaskContainer.addAsDependencyToExternalTasks(taskProvider: TaskProvider<out Task>) {
+		this.configureEach {
+			if (this@configureEach.name !in EXTERNAL_DEPENDANT_TASK_NAMES) {
+				return@configureEach
+			}
+
+			this@configureEach.dependsOn(taskProvider)
+		}
 	}
 }
 
