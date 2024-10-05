@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.mfederczuk"
-version = "0.1.0-indev01"
+version = "0.1.0-indev02"
 
 java {
 	targetCompatibility = JavaVersion.VERSION_1_8
