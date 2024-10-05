@@ -5,9 +5,9 @@
 
 # Build Constants Gradle Plugin #
 
-[version_shield]: https://img.shields.io/badge/version-0.1.0--indev01-informational.svg
-[release_page]: https://github.com/mfederczuk/build-constants-gradle-plugin/releases/tag/v0.1.0-indev01 "Release v0.1.0-indev01"
-[![version: 0.1.0-indev01][version_shield]][release_page]
+[version_shield]: https://img.shields.io/badge/version-0.1.0--indev02-informational.svg
+[release_page]: https://github.com/mfederczuk/build-constants-gradle-plugin/releases/tag/v0.1.0-indev02 "Release v0.1.0-indev02"
+[![version: 0.1.0-indev02][version_shield]][release_page]
 [![Changelog](https://img.shields.io/badge/-Changelog-informational.svg)](CHANGELOG.md "Changelog")
 
 ## About ##
@@ -32,7 +32,7 @@ import io.github.mfederczuk.buildconstants.ConstantValue
 import io.github.mfederczuk.buildconstants.Visibility
 
 plugins {
-	id("io.github.mfederczuk.build-constants") version "0.1.0-indev01"
+	id("io.github.mfederczuk.build-constants") version "0.1.0-indev02"
 }
 
 buildConstants {
