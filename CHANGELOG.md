@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/mfederczuk/build-constants-gradle-plugin/compare/v0.1.0-indev02...HEAD
 
+### Added ###
+
+* All generated files now `@Suppress` the Kotlin compiler warning `REDUNDANT_VISIBILITY_MODIFIER` (instead of
+  the IntelliJ warning `RedundantVisibilityModifier`) so that the files can be used with
+  `allWarningsAsErrors` (`-Werror`) turned on
+
 ### Changed ###
 
 * Complete rewrite of the data model, API and DSL.  

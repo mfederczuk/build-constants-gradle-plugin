@@ -18,6 +18,8 @@ kotlin {
 	compilerOptions {
 		// <https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0412-unused-return-value-checker.md>
 		freeCompilerArgs.add("-Xreturn-value-checker=full")
+
+		// freeCompilerArgs.add("-Xrender-internal-diagnostic-names")
 	}
 }
 
