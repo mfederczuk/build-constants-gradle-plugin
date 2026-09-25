@@ -18,6 +18,13 @@ kotlin {
 		freeCompilerArgs.add("-Xreturn-value-checker=full")
 
 		// freeCompilerArgs.add("-Xrender-internal-diagnostic-names")
+
+		extraWarnings = true
+		allWarningsAsErrors = findProperty("allWarningsAsErrors")
+			?.toString()
+			.orEmpty()
+			.ifEmpty { "false" }
+			.toBooleanStrict()
 	}
 }
 
