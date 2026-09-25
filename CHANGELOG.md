@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * All generated files now `@Suppress` the Kotlin compiler warning `REDUNDANT_VISIBILITY_MODIFIER` (instead of
   the IntelliJ warning `RedundantVisibilityModifier`) so that the files can be used with
   `allWarningsAsErrors` (`-Werror`) turned on
+* All generated files now `@Suppress` all [ktlint](https://github.com/ktlint/ktlint) errors
 
 ### Changed ###
 
