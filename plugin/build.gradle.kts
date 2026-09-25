@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Michael Federczuk
+ * Copyright (c) 2026 Michael Federczuk
  * SPDX-License-Identifier: MPL-2.0 AND Apache-2.0
  */
 
@@ -14,14 +14,17 @@ plugins {
 group = "io.github.mfederczuk"
 version = "0.1.0-indev02"
 
+val projectJvmTarget: JvmTarget = JvmTarget.JVM_1_8
+
 java {
-	targetCompatibility = JavaVersion.VERSION_1_8
-	sourceCompatibility = targetCompatibility
+	val projectJavaCompatibilityVersion: JavaVersion = projectJvmTarget.toJavaVersion()
+	targetCompatibility = projectJavaCompatibilityVersion
+	sourceCompatibility = projectJavaCompatibilityVersion
 }
 
 kotlin {
 	compilerOptions {
-		jvmTarget = JvmTarget.fromTarget(java.targetCompatibility.toString())
+		jvmTarget = projectJvmTarget
 	}
 
 	explicitApi()
@@ -118,3 +121,7 @@ publishing {
 }
 
 // endregion
+
+fun JvmTarget.toJavaVersion(): JavaVersion {
+	return JavaVersion.toVersion(this.target)
+}
