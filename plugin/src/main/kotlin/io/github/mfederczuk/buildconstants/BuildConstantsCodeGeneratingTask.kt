@@ -147,7 +147,7 @@ private fun createObjectFileSpec(
 ): FileSpec {
 	val suppressAnnotationSpec: AnnotationSpec = AnnotationSpec.builder(Suppress::class)
 		.useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
-		.addMember("%S", "RedundantVisibilityModifier")
+		.addMember("%S", "REDUNDANT_VISIBILITY_MODIFIER")
 		.addMember("%S", "unused")
 		.addMember("%S", "ConstPropertyName")
 		.build()
