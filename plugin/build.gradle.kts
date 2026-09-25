@@ -8,7 +8,7 @@ import java.net.URI
 
 plugins {
 	`kotlin-dsl`
-	id("com.gradle.plugin-publish") version "1.2.1"
+	id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 group = "io.github.mfederczuk"
@@ -28,7 +28,7 @@ kotlin {
 }
 
 dependencies {
-	implementation("com.squareup:kotlinpoet:1.17.0")
+	implementation("com.squareup:kotlinpoet:2.4.0")
 }
 
 // region publishing
