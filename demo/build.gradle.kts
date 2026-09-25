@@ -17,6 +17,13 @@ application {
 	mainClass = "io.github.mfederczuk.buildconstants.demo.Main"
 }
 
+kotlin {
+	compilerOptions {
+		// <https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0412-unused-return-value-checker.md>
+		freeCompilerArgs.add("-Xreturn-value-checker=full")
+	}
+}
+
 buildConstants {
 	"io.github.mfederczuk.buildconstants.demo.BuildConstants"(id = "main") @Suppress("unused") {
 		val isDebug: Boolean by constant {
