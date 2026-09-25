@@ -23,11 +23,11 @@ java {
 }
 
 kotlin {
+	explicitApi()
+
 	compilerOptions {
 		jvmTarget = projectJvmTarget
 	}
-
-	explicitApi()
 }
 
 dependencies {
