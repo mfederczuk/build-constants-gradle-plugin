@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: CC0-1.0
+
+[src/**/*.{kt,kts}]
+ktlint_standard_blank-line-between-when-conditions = disabled

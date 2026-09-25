@@ -1,0 +1,281 @@
+#!/usr/bin/env python
+# -*- python -*-
+# vim: set syntax=python
+
+# Copyright (c) 2026 Michael Federczuk
+# SPDX-License-Identifier: MPL-2.0 AND Apache-2.0
+
+import hashlib
+import io
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import typing
+import urllib.request
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from http.client import HTTPResponse
+from io import BufferedWriter
+from pathlib import Path
+from subprocess import CompletedProcess
+from typing import IO, Protocol, final
+
+
+class _Digest(Protocol):
+
+	def hexdigest(self) -> str:
+		raise NotImplementedError()
+
+
+_JsonValue = None | bool | int | float | str | Sequence["_JsonValue"] | Mapping[str, "_JsonValue"]
+
+
+@final
+@dataclass(frozen=True)
+class _KtlintError:
+	line: int
+	column: int
+	rule_id: str
+	message: str
+
+
+@final
+@dataclass(frozen=True)
+class _KtlintErrorsGroup:
+	file_path: Path
+	errors: Sequence[_KtlintError]
+
+	def __post_init__(self) -> None:
+		if len(self.errors) == 0:
+			raise ValueError("Errors must not be empty")
+
+
+@final
+class _TerminalEffects:
+	_enabled: bool
+
+	def __init__(self) -> None:
+		term: str = os.getenv("TERM", "")
+
+		self._enabled = (os.getenv("NO_COLOR", "") == "") and \
+		                (
+			                (term in {"xterm-color", "xterm-kitty", "xterm-ghostty"}) or
+			                term.endswith("-256color") or
+			                term.endswith("256") or
+			                (os.getenv("COLORTERM", "") in {"truecolor", "24bit"})
+		                )
+
+	def dimmed(self, text: str) -> str:
+		if not self._enabled:
+			return text
+
+		return f"\x1b[90m{text}\x1b[0m"
+
+
+_KTLINT_VERSION: str = "2.0.0-ALPHA-4"
+_KTLINT_JAR_URL: str = f"https://github.com/ktlint/ktlint/releases/download/{_KTLINT_VERSION}/ktlint"
+_KTLINT_JAR_SHA256_CHECKSUM: str = "fb28b3cd57116d1de78867ebd8ce398ede91e91b280b33dc367e0108336b79f1"
+
+
+def _main() -> int:
+	ktlint_jar_path: Path = _get_ktlint_jar_path()
+
+	process: CompletedProcess[str]
+	try:
+		process = subprocess.run(
+			args=(
+				"java",
+				"-jar",
+				str(ktlint_jar_path),
+				"--relative",
+				"--reporter=json",
+				"--log-level=none",
+				"--",
+				"**/src/**/*.kt",
+				"**/*.kts",
+			),
+			stdout=subprocess.PIPE,
+			encoding="utf-8",
+		)
+	except FileNotFoundError:
+		print(f"{sys.argv[0]}: java: program missing", file=sys.stderr)
+		return 1
+
+	error_groups: Sequence[_KtlintErrorsGroup] | None = \
+		_parse_json_to_ktlint_error_groups(
+			typing.cast(
+				_JsonValue,
+				json.loads(process.stdout),
+			),
+		)
+
+	if error_groups is None:
+		print(f"{sys.argv[0]}: failed to parse ktlint output", file=sys.stderr)
+		return 1
+
+	_print_ktlint_errors(error_groups)
+
+	return 0 if len(error_groups) == 0 else 1
+
+
+def _get_ktlint_jar_path() -> Path:
+	ktlint_jar_path: Path
+	for ktlint_jar_path in _get_potential_ktlint_jar_paths():
+		digest: _Digest
+		try:
+			with ktlint_jar_path.open(mode="rb") as ktlint_jar:
+				digest = hashlib.file_digest(ktlint_jar, "sha256")
+		except FileNotFoundError:
+			continue
+
+		if digest.hexdigest() == _KTLINT_JAR_SHA256_CHECKSUM:
+			return ktlint_jar_path
+
+	return _download_ktlint_jar()
+
+
+def _get_potential_ktlint_jar_paths() -> Iterable[Path]:
+	user_bin_dir_path: Path = Path.home() / ".local" / "bin"
+	yield user_bin_dir_path / "ktlint"
+	yield user_bin_dir_path / "ktlint.jar"
+	yield _get_ktlint_jar_file_path_in_lib_dir()
+
+
+def _download_ktlint_jar() -> Path:
+	ktlint_jar_file_path: Path = _get_ktlint_jar_file_path_in_lib_dir()
+
+	tmp_ktlint_jar: IO[bytes]
+	with tempfile.TemporaryFile() as tmp_ktlint_jar:
+		ktlint_jar_response: HTTPResponse
+		with urllib.request.urlopen(_KTLINT_JAR_URL) as ktlint_jar_response:  # pyright: ignore[reportAny]
+			shutil.copyfileobj(ktlint_jar_response, tmp_ktlint_jar, length=io.DEFAULT_BUFFER_SIZE)
+
+		_ = tmp_ktlint_jar.seek(0)
+
+		# <https://youtrack.jetbrains.com/issue/PY-81830>
+		# noinspection PyTypeChecker
+		if hashlib.file_digest(tmp_ktlint_jar, "sha256").hexdigest() != _KTLINT_JAR_SHA256_CHECKSUM:
+			raise RuntimeError("Downloaded ktlint JAR's SHA256 checksum does not match")
+
+		_ = tmp_ktlint_jar.seek(0)
+
+		ktlint_jar_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+		ktlint_jar_file: BufferedWriter
+		with ktlint_jar_file_path.open(mode="wb") as ktlint_jar_file:
+			# <https://youtrack.jetbrains.com/issue/PY-81830>
+			# noinspection PyTypeChecker
+			shutil.copyfileobj(tmp_ktlint_jar, ktlint_jar_file, length=io.DEFAULT_BUFFER_SIZE)
+
+	return ktlint_jar_file_path
+
+
+def _get_ktlint_jar_file_path_in_lib_dir() -> Path:
+	return Path.home() / ".local" / "lib" / "ktlint-jars" / f"ktlint-{_KTLINT_VERSION}.jar"
+
+
+def _parse_json_to_ktlint_error_groups(error_groups_json_value: _JsonValue) -> Sequence[_KtlintErrorsGroup] | None:
+	if not isinstance(error_groups_json_value, Sequence):
+		return None
+
+	error_groups: list[_KtlintErrorsGroup] = []
+
+	error_group_json_value: _JsonValue
+	for error_group_json_value in error_groups_json_value:
+		if not isinstance(error_group_json_value, Mapping):
+			return None
+
+		file_path_json_value: _JsonValue = error_group_json_value.get("file", None)
+		errors_json_value: _JsonValue = error_group_json_value.get("errors", None)
+
+		if not isinstance(file_path_json_value, str):
+			return None
+
+		if not isinstance(errors_json_value, Sequence):
+			return None
+
+		errors: list[_KtlintError] = []
+
+		error_json_value: _JsonValue
+		for error_json_value in errors_json_value:
+			if not isinstance(error_json_value, Mapping):
+				return None
+
+			line_json_value: _JsonValue = error_json_value.get("line", None)
+			column_json_value: _JsonValue = error_json_value.get("column", None)
+			rule_id_json_value: _JsonValue = error_json_value.get("rule", None)
+			message_json_value: _JsonValue = error_json_value.get("message", None)
+
+			if not isinstance(line_json_value, int):
+				return None
+
+			if not isinstance(column_json_value, int):
+				return None
+
+			if not isinstance(rule_id_json_value, str):
+				return None
+
+			if not isinstance(message_json_value, str):
+				return None
+
+			error = \
+				_KtlintError(
+					line=line_json_value,
+					column=column_json_value,
+					rule_id=rule_id_json_value,
+					message=message_json_value,
+				)
+			errors.append(error)
+
+		error_group = \
+			_KtlintErrorsGroup(
+				file_path=Path(file_path_json_value),
+				errors=errors,
+			)
+		error_groups.append(error_group)
+
+	return error_groups
+
+
+def _print_ktlint_errors(error_groups: Sequence[_KtlintErrorsGroup]) -> None:
+	terminal_effects: _TerminalEffects = _TerminalEffects()
+
+	msg: str = ""
+
+	error_group: _KtlintErrorsGroup
+	for error_group in error_groups:
+		if msg != "":
+			msg += "\n\n"
+
+		msg += _ktlint_error_group_to_message(error_group, terminal_effects)
+
+	if msg != "":
+		print(msg)
+
+
+def _ktlint_error_group_to_message(error_group: _KtlintErrorsGroup, terminal_effects: _TerminalEffects) -> str:
+	file_name: str = error_group.file_path.name
+
+	msg: str = ""
+
+	msg += terminal_effects.dimmed(str(error_group.file_path).removesuffix(file_name))
+	msg += file_name
+	msg += terminal_effects.dimmed(":")
+
+	error: _KtlintError
+	for error in error_group.errors:
+		msg += "\n\t"
+		msg += terminal_effects.dimmed(":")
+		msg += str(error.line)
+		msg += terminal_effects.dimmed(f":{error.column}:")
+		msg += f" {error.message} "
+		msg += terminal_effects.dimmed(f"({error.rule_id})")
+
+	return msg
+
+
+if __name__ == "__main__":
+	sys.exit(_main())
