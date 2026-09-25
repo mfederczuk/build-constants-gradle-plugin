@@ -6,7 +6,7 @@ import io.github.mfederczuk.buildconstants.ConstantValue
 import java.time.Instant
 
 plugins {
-	kotlin("jvm") version "2.0.20"
+	kotlin("jvm") version "2.4.21"
 	application
 	id("io.github.mfederczuk.build-constants")
 }
