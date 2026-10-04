@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed ###
 
+* Complete rewrite of the data model, API and DSL.  
+  Instead of having a task for each generated object, there is now only one task that generates *all* objects
 * Java compatibility version changed from 1.8 to 17
 
 ## [v0.1.0-indev02] - 2024-10-06 ##

@@ -2,9 +2,6 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-import io.github.mfederczuk.buildconstants.ConstantValue
-import java.time.Instant
-
 plugins {
 	kotlin("jvm") version "2.4.21"
 	application
@@ -14,7 +11,7 @@ plugins {
 version = "0.1.0"
 
 application {
-	mainClass = "io.github.mfederczuk.buildconstants.demo.Main"
+	mainClass = "com.example.Main"
 }
 
 kotlin {
@@ -24,38 +21,35 @@ kotlin {
 	}
 }
 
-buildConstants {
-	"io.github.mfederczuk.buildconstants.demo.BuildConstants"(id = "main") @Suppress("unused") {
-		val isDebug: Boolean by constant {
-			project.providers.gradleProperty("debug")
-				.map(String::toBoolean)
-				.orElse(false)
-		}
+buildConstants.pkg("com.example") {
+	val isDebugProvider: Provider<Boolean> = project.providers.gradleProperty("debug")
+		.map(String::toBoolean)
+		.orElse(false)
 
-		val buildTime: String by constant {
-			if (isDebug) {
-				// Keep in mind that adding the build time will create non-reproducible builds.
-				// (if that is important for you)
-				Instant.now()
-			} else {
-				"[REDACTED]"
-			}
-		}
+	obj("BuildConstants") {
+		// Project.getVersion()'s return type is `java.lang.Object`, which is why the toString() call is necessary.
+		prop("VERSION").stringValue = project.version.toString()
 
-		val version: String by constant {
-			project.version
-		}
+		// Instances of Gradle's `org.gradle.api.provider.Provider` type are also accepted for lazy evaluation.
+		prop("IS_DEBUG").booleanValue = isDebugProvider
 	}
 
-	"io.github.mfederczuk.buildconstants.demo.ids.IDs" {
-		val ids: Set<String> = setOf("foo", "bar", "baz")
-
-		constants {
-			for (id: String in ids) {
-				register(id) {
-					value = ConstantValue.Int(id.hashCode())
+	pkg("api") {
+		// The default visibility for objects is internal.
+		// To make an object public instead, the obj() call must be prefixed with `public.`
+		public.obj("ApiConstants") {
+			prop("TOKEN").stringValue = isDebugProvider
+				.map { isDebug: Boolean ->
+					if (isDebug) {
+						"debug token"
+					} else {
+						"production token"
+					}
 				}
-			}
+		}
+
+		pkg("foo.bar").public.obj("Baz") {
+			// ...
 		}
 	}
 }

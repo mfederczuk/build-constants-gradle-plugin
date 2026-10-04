@@ -4,16 +4,24 @@
 
 package io.github.mfederczuk.buildconstants.internal
 
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 
-internal inline fun <T1 : Any, T2 : Any, T3 : Any, R : Any> Provider<T1>.zip(
-	firstRight: Provider<T2>,
-	secondRight: Provider<T3>,
-	crossinline combiner: (T1, T2, T3) -> R,
-): Provider<R> {
-	return this
-		.zip(firstRight, ::Pair)
-		.zip(secondRight) { (leftValue: T1, firstRightValue: T2), secondRightValue: T3 ->
-			combiner(leftValue, firstRightValue, secondRightValue)
+internal fun <K, V : Any> Map<K, Provider<out V>>.foldProviders(
+	providerFactory: ProviderFactory,
+): Provider<out ImmutableMap<K, V>> {
+	return this.entries
+		.fold(initial = providerFactory.provider { persistentMapOf() }) {
+			accumulatedMapProvider: Provider<PersistentMap<K, V>>,
+			(key: K, valueProvider: Provider<out V>),
+			->
+
+			accumulatedMapProvider
+				.zip(valueProvider) { accumulatedMap: PersistentMap<K, V>, value: V ->
+					accumulatedMap.putting(key, value)
+				}
 		}
 }

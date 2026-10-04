@@ -34,6 +34,7 @@ kotlin {
 }
 
 dependencies {
+	api("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.2")
 	implementation("com.squareup:kotlinpoet:2.4.0")
 }
 

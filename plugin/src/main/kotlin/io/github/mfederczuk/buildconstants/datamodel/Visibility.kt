@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-package io.github.mfederczuk.buildconstants
+package io.github.mfederczuk.buildconstants.datamodel
 
 public enum class Visibility {
-	PUBLIC,
-	INTERNAL,
+	Public,
+	Internal,
 }
