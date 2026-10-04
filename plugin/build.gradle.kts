@@ -8,7 +8,7 @@ import java.net.URI
 
 plugins {
 	`kotlin-dsl`
-	id("com.gradle.plugin-publish") version "2.2.1"
+	id("com.gradle.plugin-publish")
 }
 
 group = "io.github.mfederczuk"

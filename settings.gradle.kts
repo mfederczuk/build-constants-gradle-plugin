@@ -4,5 +4,17 @@
 
 rootProject.name = "build-constants"
 
-includeBuild("plugin")
-includeBuild("demo")
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+	}
+}
+
+dependencyResolutionManagement {
+	repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+	repositories {
+		mavenCentral()
+	}
+}
+
+include(":plugin")

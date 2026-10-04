@@ -59,6 +59,10 @@ def _main() -> int:
 		script_dir_path / "plugin" / "build.gradle.kts",
 		("\"trunk-SNAPSHOT\"", f"\"{version}\""),
 	)
+	_replace_in_file(
+		script_dir_path / "demo" / "build.gradle.kts",
+		("\"trunk-SNAPSHOT\"", f"\"{version}\""),
+	)
 
 	_adjust_changelog_file(version)
 
