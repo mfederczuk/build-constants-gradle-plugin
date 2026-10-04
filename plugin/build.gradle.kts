@@ -14,7 +14,7 @@ plugins {
 group = "io.github.mfederczuk"
 version = "0.1.0-indev02"
 
-val projectJvmTarget: JvmTarget = JvmTarget.JVM_1_8
+val projectJvmTarget: JvmTarget = JvmTarget.JVM_17
 
 java {
 	val projectJavaCompatibilityVersion: JavaVersion = projectJvmTarget.toJavaVersion()
