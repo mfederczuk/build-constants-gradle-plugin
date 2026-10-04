@@ -8,11 +8,11 @@ import java.net.URI
 
 plugins {
 	`kotlin-dsl`
-	id("com.gradle.plugin-publish") version "2.2.1"
+	id("com.gradle.plugin-publish")
 }
 
 group = "io.github.mfederczuk"
-version = "0.1.0-indev02"
+version = "0.1.0-indev02.SNAPSHOT"
 
 val projectJvmTarget: JvmTarget = JvmTarget.JVM_17
 

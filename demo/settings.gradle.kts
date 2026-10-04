@@ -2,17 +2,11 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-rootProject.name = "demo"
+rootProject.name = "build-constants-demo"
 
 pluginManagement {
-	val absoluteProjectDir: File = rootProject.projectDir.absoluteFile
-	val pluginProjectDir: File = absoluteProjectDir.parentFile
-		.resolve("plugin")
-		.relativeToOrSelf(absoluteProjectDir)
-
-	includeBuild(pluginProjectDir)
-
 	repositories {
+		mavenLocal()
 		gradlePluginPortal()
 	}
 }
