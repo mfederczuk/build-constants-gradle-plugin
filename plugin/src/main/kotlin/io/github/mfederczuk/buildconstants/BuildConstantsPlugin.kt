@@ -1,15 +1,12 @@
 /*
- * Copyright (c) 2024 Michael Federczuk
+ * Copyright (c) 2026 Michael Federczuk
  * SPDX-License-Identifier: MPL-2.0 AND Apache-2.0
  */
 
 package io.github.mfederczuk.buildconstants
 
-import io.github.mfederczuk.buildconstants.internal.ConstantsObjectGenerationTasks
-import io.github.mfederczuk.buildconstants.internal.ConstantsObjectsGenerationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.provider.Provider
@@ -20,97 +17,77 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
 public class BuildConstantsPlugin : Plugin<Project> {
 
-	private companion object {
-		val EXTERNAL_DEPENDANT_TASK_NAMES: Set<String> = hashSetOf("compileKotlin", "sourcesJar", "kotlinSourcesJar")
+	public companion object {
+
+		public const val EXTENSION_NAME: String = "buildConstants"
+
+		public const val CODE_GENERATING_TASK_NAME: String = "generateBuildConstantsCode"
 	}
 
 	override fun apply(project: Project) {
-		val extension: BuildConstantsExtension =
-			project.extensions.create<BuildConstantsExtension>(name = "buildConstants")
-		extension.objects
-			.configureEach {
-				this@configureEach.visibility.convention(Visibility.INTERNAL)
-			}
+		val extension: BuildConstantsExtension = project.extensions
+			.create<BuildConstantsExtension>(name = EXTENSION_NAME)
 
-		val baseOutputDirectoryProvider: Provider<Directory> = project.layout.buildDirectory
+		val outputDirectoryProvider: Provider<Directory> = project.layout.buildDirectory
 			.dir("generated")
-			.dir("build-constants")
-
-		project.plugins.withType<IdeaPlugin> {
-			project.extensions.configure<IdeaModel> {
-				this@configure.module {
-					this@module.generatedSourceDirs.add(baseOutputDirectoryProvider.get().asFile)
-				}
-			}
-		}
-
-		project.extensions.configure<SourceSetContainer>("sourceSets") {
-			this@configure.named("main") {
-				this@named.extensions.configure<SourceDirectorySet>("kotlin") nestedConfigure@{
-					this@nestedConfigure.srcDir(baseOutputDirectoryProvider)
-				}
-			}
-		}
-
-		extension.objects
-			.all {
-				this@BuildConstantsPlugin
-					.registerConstantsObjectGenerationTask(
-						project,
-						constantsObject = this@all,
-						baseOutputDirectoryProvider,
-					)
+			.map { directory: Directory ->
+				directory.dir("build-constants")
 			}
 
-		this.registerConstantsObjectsGenerationTaskIn(project)
+		project.addGeneratedSourceDirectory(outputDirectoryProvider)
+
+		registerCodeGeneratingTask(
+			taskContainer = project.tasks,
+			extension = extension,
+			outputDirectoryProvider = outputDirectoryProvider,
+		)
 	}
+}
 
-	private fun registerConstantsObjectGenerationTask(
-		project: Project,
-		constantsObject: BuildConstantsExtension.ConstantsObject,
-		baseOutputDirectoryProvider: Provider<Directory>,
-	) {
-		val constantsObjectGenerationTaskProvider: TaskProvider<ConstantsObjectGenerationTask> =
-			ConstantsObjectGenerationTasks.registerFromExtensionData(
-				taskContainer = project.tasks,
-				constantsObject,
-				baseOutputDirectoryProvider,
-			)
-
-		project.tasks.addAsDependencyToExternalTasks(constantsObjectGenerationTaskProvider)
-
-		project.tasks.named<Delete>("clean") {
-			this@named.delete(constantsObjectGenerationTaskProvider)
+private fun Project.addGeneratedSourceDirectory(directoryProvider: Provider<Directory>) {
+	this.plugins.withType<IdeaPlugin> {
+		this@addGeneratedSourceDirectory.extensions.configure<IdeaModel> {
+			this@configure.module {
+				this@module.generatedSourceDirs.add(directoryProvider.get().asFile)
+			}
 		}
 	}
 
-	private fun registerConstantsObjectsGenerationTaskIn(project: Project) {
-		val constantsObjectsGenerationTaskProvider: TaskProvider<Task> =
-			ConstantsObjectsGenerationTask.registerIn(taskContainer = project.tasks)
-
-		project.tasks.addAsDependencyToExternalTasks(constantsObjectsGenerationTaskProvider)
-	}
-
-	private fun TaskContainer.addAsDependencyToExternalTasks(taskProvider: TaskProvider<out Task>) {
-		this.configureEach {
-			if (this@configureEach.name !in EXTERNAL_DEPENDANT_TASK_NAMES) {
-				return@configureEach
+	this.extensions.configure<SourceSetContainer>("sourceSets") {
+		this@configure.named("main") {
+			this@named.extensions.configure<SourceDirectorySet>("kotlin") nestedConfigure@{
+				this@nestedConfigure.srcDir(directoryProvider)
 			}
-
-			this@configureEach.dependsOn(taskProvider)
 		}
 	}
 }
 
-private fun Provider<Directory>.dir(path: String): Provider<Directory> {
-	return this
-		.map { directory: Directory ->
-			directory.dir(path)
+private fun registerCodeGeneratingTask(
+	taskContainer: TaskContainer,
+	extension: BuildConstantsExtension,
+	outputDirectoryProvider: Provider<Directory>,
+) {
+	val codeGeneratingTaskProvider: TaskProvider<BuildConstantsCodeGeneratingTask> =
+		taskContainer.register<BuildConstantsCodeGeneratingTask>(name = BuildConstantsPlugin.CODE_GENERATING_TASK_NAME) {
+			this@register.rootPackageContents.set(extension.rootPackageContents)
+			this@register.outputDirectory.set(outputDirectoryProvider)
 		}
+
+	val externalDependantTaskNames: Set<String> = hashSetOf("compileKotlin", "sourcesJar", "kotlinSourcesJar")
+	taskContainer.configureEach {
+		if (this@configureEach.name in externalDependantTaskNames) {
+			this@configureEach.dependsOn(codeGeneratingTaskProvider)
+		}
+	}
+
+	taskContainer.named<Delete>("clean") {
+		this@named.delete(codeGeneratingTaskProvider)
+	}
 }
