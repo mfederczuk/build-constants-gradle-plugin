@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.mfederczuk"
-version = "0.1.0-indev02.SNAPSHOT"
+version = "trunk-SNAPSHOT"
 
 val projectJvmTarget: JvmTarget = JvmTarget.JVM_17
 

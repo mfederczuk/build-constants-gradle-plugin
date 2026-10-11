@@ -1,4 +1,5 @@
 {
 	"pythonVersion": "3.11",
-	"pythonPlatform": "All"
+	"pythonPlatform": "All",
+	"reportImplicitStringConcatenation": false
 }

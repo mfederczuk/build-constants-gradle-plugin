@@ -5,10 +5,8 @@
 plugins {
 	kotlin("jvm") version "2.4.21"
 	application
-	id("io.github.mfederczuk.build-constants") version "0.1.0-indev02.SNAPSHOT"
+	id("io.github.mfederczuk.build-constants") version "trunk-SNAPSHOT"
 }
-
-version = "0.1.0"
 
 application {
 	mainClass = "com.example.Main"
