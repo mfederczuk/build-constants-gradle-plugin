@@ -27,6 +27,7 @@ import com.squareup.kotlinpoet.U_LONG
 import com.squareup.kotlinpoet.U_SHORT
 import io.github.mfederczuk.buildconstants.datamodel.KotlinIdentifier
 import io.github.mfederczuk.buildconstants.datamodel.ObjectDetails
+import io.github.mfederczuk.buildconstants.datamodel.ObjectEntryDetails
 import io.github.mfederczuk.buildconstants.datamodel.PackageContents
 import io.github.mfederczuk.buildconstants.datamodel.PropertyDetails
 import io.github.mfederczuk.buildconstants.datamodel.TypedValue
@@ -102,7 +103,7 @@ private fun generateFiles(rootPackageContents: PackageContents, outputDirectoryP
 				objectVisibility = `object`.details.visibility,
 				isDataObject = `object`.details.isData,
 				objectName = `object`.name,
-				objectProperties = `object`.details.properties,
+				objectEntries = `object`.details.entries,
 			)
 
 		fileSpec.writeTo(directory = outputDirectoryPath)
@@ -145,7 +146,7 @@ private fun createObjectFileSpec(
 	objectVisibility: Visibility,
 	isDataObject: Boolean,
 	objectName: KotlinIdentifier,
-	objectProperties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
+	objectEntries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails>,
 ): FileSpec {
 	val suppressAnnotationSpec: AnnotationSpec = AnnotationSpec.builder(Suppress::class)
 		.useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
@@ -158,7 +159,7 @@ private fun createObjectFileSpec(
 	return FileSpec
 		.get(
 			packageName = packageName?.toString().orEmpty(),
-			typeSpec = createObjectTypeSpec(objectVisibility, isDataObject, objectName, objectProperties),
+			typeSpec = createObjectTypeSpec(objectVisibility, isDataObject, objectName, objectEntries),
 		)
 		.toBuilder()
 		.addFileComment("This file was automatically generated. DO NOT EDIT!")
@@ -170,7 +171,7 @@ private fun createObjectTypeSpec(
 	visibility: Visibility,
 	isData: Boolean,
 	name: KotlinIdentifier,
-	properties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
+	entries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails>,
 ): TypeSpec {
 	val visibilityModifier: KModifier =
 		when (visibility) {
@@ -185,15 +186,31 @@ private fun createObjectTypeSpec(
 		builder = builder.addModifiers(KModifier.DATA)
 	}
 
-	for ((propertyName: KotlinIdentifier, propertyDetails: PropertyDetails) in properties) {
-		val propertySpec: PropertySpec =
-			createPropertySpec(
-				visibility = propertyDetails.visibility,
-				name = propertyName,
-				typedValue = propertyDetails.typedValue,
-			)
+	for ((entryName: KotlinIdentifier, entryDetails: ObjectEntryDetails) in entries) {
+		builder = when (entryDetails) {
+			is ObjectDetails -> {
+				val nestedObjectTypeSpec: TypeSpec =
+					createObjectTypeSpec(
+						visibility = entryDetails.visibility,
+						isData = entryDetails.isData,
+						name = entryName,
+						entries = entryDetails.entries,
+					)
 
-		builder = builder.addProperty(propertySpec)
+				builder.addType(nestedObjectTypeSpec)
+			}
+
+			is PropertyDetails -> {
+				val propertySpec: PropertySpec =
+					createPropertySpec(
+						visibility = entryDetails.visibility,
+						name = entryName,
+						typedValue = entryDetails.typedValue,
+					)
+
+				builder.addProperty(propertySpec)
+			}
+		}
 	}
 
 	return builder.build()

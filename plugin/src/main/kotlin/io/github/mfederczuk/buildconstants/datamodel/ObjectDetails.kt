@@ -23,11 +23,13 @@ import java.util.Objects
 // However, this seems like an implementation detail which should not be relied on, which is why
 // the serialization API is *fully* implemented.
 
+public sealed interface ObjectEntryDetails : Serializable
+
 public class ObjectDetails(
 	visibility: Visibility,
 	isData: Boolean,
-	properties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
-) : Serializable {
+	entries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails>,
+) : ObjectEntryDetails, Serializable {
 
 	public var visibility: Visibility = visibility
 		private set
@@ -35,7 +37,7 @@ public class ObjectDetails(
 	public var isData: Boolean = isData
 		private set
 
-	public var properties: ImmutableMap<KotlinIdentifier, PropertyDetails> = properties
+	public var entries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails> = entries
 		private set
 
 	// region Serializable
@@ -44,7 +46,7 @@ public class ObjectDetails(
 	private fun writeObject(out: ObjectOutputStream) {
 		out.writeInt(this.visibility.ordinal)
 		out.writeBoolean(this.isData)
-		out.writeObject(LinkedHashMap(this.properties))
+		out.writeObject(LinkedHashMap(this.entries))
 	}
 
 	@Throws(IOException::class, ClassNotFoundException::class)
@@ -52,7 +54,7 @@ public class ObjectDetails(
 		this.visibility = Visibility.entries[`in`.readInt()]
 		this.isData = `in`.readBoolean()
 		@Suppress("UNCHECKED_CAST")
-		this.properties = (`in`.readObject() as Map<KotlinIdentifier, PropertyDetails>).toImmutableMap()
+		this.entries = (`in`.readObject() as Map<KotlinIdentifier, ObjectEntryDetails>).toImmutableMap()
 	}
 
 	// endregion
@@ -66,14 +68,14 @@ public class ObjectDetails(
 	private fun equals(other: ObjectDetails): Boolean {
 		return (this.visibility == other.visibility) &&
 			(this.isData == other.isData) &&
-			(this.properties == other.properties)
+			(this.entries == other.entries)
 	}
 
 	override fun hashCode(): Int {
 		return Objects.hash(
 			this.visibility,
 			this.isData,
-			this.properties,
+			this.entries,
 		)
 	}
 
@@ -81,7 +83,7 @@ public class ObjectDetails(
 		return "ObjectDetails(" +
 			"visibility = ${this.visibility}, " +
 			"isData = ${this.isData}, " +
-			"properties = ${this.properties}" +
+			"entries = ${this.entries}" +
 			")"
 	}
 

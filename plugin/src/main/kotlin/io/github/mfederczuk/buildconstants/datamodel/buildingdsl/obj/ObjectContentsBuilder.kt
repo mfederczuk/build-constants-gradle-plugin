@@ -11,10 +11,19 @@ import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.prop.PropertyAs
 import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.prop.PropertyDefiner
 
 @PackageContentsBuilderDsl
-public abstract class ObjectContentsBuilder : PropertyDefiner {
+public abstract class ObjectContentsBuilder : ObjectDefiner, PropertyDefiner {
 
 	@PackageContentsBuilderDsl
-	public interface InternalKeyword : PropertyDefiner {
+	public interface InternalKeyword : ObjectDefiner, PropertyDefiner {
+
+		/**
+		 * Defines a new internal nested object with the name [name].
+		 *
+		 * The contents of the object are configured by [action].
+		 *
+		 * To define a nested *data* object, use `data.obj(name) { ... }`.
+		 */
+		override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit)
 
 		/**
 		 * Defines a new internal property with the name [name] in this object.
@@ -31,6 +40,16 @@ public abstract class ObjectContentsBuilder : PropertyDefiner {
 	}
 
 	public abstract val internal: InternalKeyword
+
+	/**
+	 * Defines a new public nested object with the name [name].
+	 *
+	 * The contents of the object are configured by [action].
+	 *
+	 * To define an *internal* nested object, use `internal.obj(name) { ... }`, to define a *data* object, use
+	 * `data.obj(name) { ... }`, and to define an *internal data* object, use `internal.data.obj(name) { ... }`.
+	 */
+	abstract override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit)
 
 	/**
 	 * Defines a new public property with the name [name] in this object.
