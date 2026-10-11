@@ -188,6 +188,7 @@ private fun createObjectTypeSpec(
 	for ((propertyName: KotlinIdentifier, propertyDetails: PropertyDetails) in properties) {
 		val propertySpec: PropertySpec =
 			createPropertySpec(
+				visibility = propertyDetails.visibility,
 				name = propertyName,
 				typedValue = propertyDetails.typedValue,
 			)
@@ -198,12 +199,18 @@ private fun createObjectTypeSpec(
 	return builder.build()
 }
 
-private fun createPropertySpec(name: KotlinIdentifier, typedValue: TypedValue): PropertySpec {
+private fun createPropertySpec(visibility: Visibility, name: KotlinIdentifier, typedValue: TypedValue): PropertySpec {
+	val visibilityModifier: KModifier =
+		when (visibility) {
+			Visibility.Public -> KModifier.PUBLIC
+			Visibility.Internal -> KModifier.INTERNAL
+		}
+
 	return PropertySpec
 		.builder(
 			name.toRawIdentifierString(),
 			typedValue.toClassName(),
-			KModifier.PUBLIC,
+			visibilityModifier,
 			KModifier.CONST,
 		)
 		.initializer(typedValue.toInitializer())

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `allWarningsAsErrors` (`-Werror`) turned on
 * All generated files now `@Suppress` all [ktlint](https://github.com/ktlint/ktlint) errors
 * Generated objects can be modified with the `data` modifier
+* The visibility of generated properties can be set to **internal**
 
 ### Changed ###
 

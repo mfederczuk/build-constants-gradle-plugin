@@ -13,6 +13,25 @@ import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.prop.PropertyDe
 @PackageContentsBuilderDsl
 public abstract class ObjectContentsBuilder : PropertyDefiner {
 
+	@PackageContentsBuilderDsl
+	public interface InternalKeyword : PropertyDefiner {
+
+		/**
+		 * Defines a new internal property with the name [name] in this object.
+		 *
+		 * The type and the value are set using the return value of this function:
+		 *
+		 * ```
+		 * prop("VERSION_CODE").intValue = 69
+		 * prop("TOKEN").stringValue = project.providers.gradleProperty("token")
+		 *     .map(Any::toString)
+		 * ```
+		 */
+		override fun prop(name: String): PropertyAssignersHolder
+	}
+
+	public abstract val internal: InternalKeyword
+
 	/**
 	 * Defines a new public property with the name [name] in this object.
 	 *
@@ -23,6 +42,8 @@ public abstract class ObjectContentsBuilder : PropertyDefiner {
 	 * prop("TOKEN").stringValue = project.providers.gradleProperty("token")
 	 *     .map(Any::toString)
 	 * ```
+	 *
+	 * To define an *internal* property, use `internal.prop(name)`.
 	 */
 	abstract override fun prop(name: String): PropertyAssignersHolder
 

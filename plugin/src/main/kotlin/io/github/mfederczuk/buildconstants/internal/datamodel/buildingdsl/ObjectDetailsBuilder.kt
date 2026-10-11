@@ -30,7 +30,19 @@ internal class ObjectDetailsBuilder(
 
 	private var state: OpenState? = OpenState(providerFactory)
 
+	override val internal: InternalKeyword =
+		object : InternalKeyword {
+
+			override fun prop(name: String): PropertyAssignersHolder {
+				return this@ObjectDetailsBuilder.defineProperty(visibility = Visibility.Internal, name = name)
+			}
+		}
+
 	override fun prop(name: String): PropertyAssignersHolder {
+		return this.defineProperty(visibility = Visibility.Public, name = name)
+	}
+
+	private fun defineProperty(visibility: Visibility, name: String): PropertyAssignersHolder {
 		val name: KotlinIdentifier = name.toKotlinIdentifier()
 
 		val state: OpenState = this.getOpenState()
@@ -38,7 +50,7 @@ internal class ObjectDetailsBuilder(
 		val typedValueAssigner = TypedValuePropertyAssigner(state.providerFactory)
 
 		val prevBuilder: PropertyBuilder? =
-			state.propertyBuilders.putIfAbsent(name, PropertyBuilder(typedValueAssigner))
+			state.propertyBuilders.putIfAbsent(name, PropertyBuilder(visibility, typedValueAssigner))
 		if (prevBuilder != null) {
 			error("Duplicate property `${name.toRawIdentifierString()}`")
 		}
@@ -72,6 +84,7 @@ internal class ObjectDetailsBuilder(
 }
 
 private data class PropertyBuilder(
+	private val visibility: Visibility,
 	private val typedValueAssigner: TypedValuePropertyAssigner,
 ) {
 
@@ -85,6 +98,7 @@ private data class PropertyBuilder(
 		return typedValueProvider
 			.map { typedValue: TypedValue ->
 				PropertyDetails(
+					visibility = this.visibility,
 					typedValue = typedValue,
 				)
 			}
