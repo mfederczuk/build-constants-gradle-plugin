@@ -100,6 +100,7 @@ private fun generateFiles(rootPackageContents: PackageContents, outputDirectoryP
 			createObjectFileSpec(
 				packageName = `object`.packageName,
 				objectVisibility = `object`.details.visibility,
+				isDataObject = `object`.details.isData,
 				objectName = `object`.name,
 				objectProperties = `object`.details.properties,
 			)
@@ -142,6 +143,7 @@ private fun PackageContents.collectObjectsRecursively(): Sequence<Object> {
 private fun createObjectFileSpec(
 	packageName: KotlinPackageName?,
 	objectVisibility: Visibility,
+	isDataObject: Boolean,
 	objectName: KotlinIdentifier,
 	objectProperties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
 ): FileSpec {
@@ -156,7 +158,7 @@ private fun createObjectFileSpec(
 	return FileSpec
 		.get(
 			packageName = packageName?.toString().orEmpty(),
-			typeSpec = createObjectTypeSpec(objectVisibility, objectName, objectProperties),
+			typeSpec = createObjectTypeSpec(objectVisibility, isDataObject, objectName, objectProperties),
 		)
 		.toBuilder()
 		.addFileComment("This file was automatically generated. DO NOT EDIT!")
@@ -166,6 +168,7 @@ private fun createObjectFileSpec(
 
 private fun createObjectTypeSpec(
 	visibility: Visibility,
+	isData: Boolean,
 	name: KotlinIdentifier,
 	properties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
 ): TypeSpec {
@@ -177,6 +180,10 @@ private fun createObjectTypeSpec(
 
 	var builder: TypeSpec.Builder = TypeSpec.objectBuilder(name.toRawIdentifierString())
 		.addModifiers(visibilityModifier)
+
+	if (isData) {
+		builder = builder.addModifiers(KModifier.DATA)
+	}
 
 	for ((propertyName: KotlinIdentifier, propertyDetails: PropertyDetails) in properties) {
 		val propertySpec: PropertySpec =

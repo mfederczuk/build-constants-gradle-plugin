@@ -12,6 +12,7 @@ import io.github.mfederczuk.buildconstants.datamodel.PackageContents
 import io.github.mfederczuk.buildconstants.datamodel.Visibility
 import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.PackageContentsBuilder
 import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.obj.ObjectContentsBuilder
+import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.obj.ObjectDefiner.DataKeyword
 import io.github.mfederczuk.buildconstants.internal.KotlinPackageName
 import io.github.mfederczuk.buildconstants.internal.KotlinPackageName.Companion.toKotlinPackageName
 import io.github.mfederczuk.buildconstants.internal.foldProviders
@@ -33,9 +34,36 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 	override val public: PublicKeyword =
 		object : PublicKeyword {
 
+			override val data: DataKeyword =
+				object : DataKeyword {
+
+					override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+						this@PackageContentsBuilderImpl.defineObject(
+							visibility = Visibility.Public,
+							isData = true,
+							name = name,
+							action = action,
+						)
+					}
+				}
+
 			override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
 				this@PackageContentsBuilderImpl.defineObject(
 					visibility = Visibility.Public,
+					isData = false,
+					name = name,
+					action = action,
+				)
+			}
+		}
+
+	override val data: DataKeyword =
+		object : DataKeyword {
+
+			override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+				this@PackageContentsBuilderImpl.defineObject(
+					visibility = Visibility.Internal,
+					isData = true,
 					name = name,
 					action = action,
 				)
@@ -55,6 +83,7 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 	override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
 		this.defineObject(
 			visibility = Visibility.Internal,
+			isData = false,
 			name = name,
 			action = action,
 		)
@@ -70,13 +99,18 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 		}
 	}
 
-	private fun defineObject(visibility: Visibility, name: String, action: ObjectContentsBuilder.() -> Unit) {
+	private fun defineObject(
+		visibility: Visibility,
+		isData: Boolean,
+		name: String,
+		action: ObjectContentsBuilder.() -> Unit,
+	) {
 		val name: KotlinIdentifier = name.toKotlinIdentifier()
 
 		val state: OpenState = this.getOpenState()
 
 		val detailsProvider: Provider<ObjectDetails> =
-			ObjectDetailsBuilder(providerFactory = state.providerFactory, visibility = visibility)
+			ObjectDetailsBuilder(providerFactory = state.providerFactory, visibility = visibility, isData = isData)
 				.apply(action)
 				.closeAndBuildObjectDetailsProvider()
 

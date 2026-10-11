@@ -57,7 +57,7 @@ buildConstants.pkg("com.example") {
 				}
 		}
 
-		pkg("foo.bar").public.obj("Baz") {
+		pkg("foo.bar").public.data.obj("Baz") {
 			// ...
 		}
 	}

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the IntelliJ warning `RedundantVisibilityModifier`) so that the files can be used with
   `allWarningsAsErrors` (`-Werror`) turned on
 * All generated files now `@Suppress` all [ktlint](https://github.com/ktlint/ktlint) errors
+* Generated objects can be modified with the `data` modifier
 
 ### Changed ###
 
