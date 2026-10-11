@@ -9,6 +9,7 @@ import java.util.Objects
 
 // See <https://jakewharton.com/public-api-challenges-in-kotlin/> as to why this isn't a data class.
 public class PropertyDetails(
+	public val visibility: Visibility,
 	public val typedValue: TypedValue,
 ) : Serializable {
 
@@ -19,17 +20,20 @@ public class PropertyDetails(
 	}
 
 	private fun equals(other: PropertyDetails): Boolean {
-		return (this.typedValue == other.typedValue)
+		return (this.visibility == other.visibility) &&
+			(this.typedValue == other.typedValue)
 	}
 
 	override fun hashCode(): Int {
 		return Objects.hash(
+			this.visibility,
 			this.typedValue,
 		)
 	}
 
 	override fun toString(): String {
 		return "PropertyDetails(" +
+			"visibility = ${this.visibility}, " +
 			"typedValue = ${this.typedValue}" +
 			")"
 	}
