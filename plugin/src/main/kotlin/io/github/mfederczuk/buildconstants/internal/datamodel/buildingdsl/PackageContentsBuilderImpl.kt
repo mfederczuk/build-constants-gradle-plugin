@@ -5,14 +5,18 @@
 
 package io.github.mfederczuk.buildconstants.internal.datamodel.buildingdsl
 
+import io.github.mfederczuk.buildconstants.datamodel.FileContents
+import io.github.mfederczuk.buildconstants.datamodel.KotlinFileName
+import io.github.mfederczuk.buildconstants.datamodel.KotlinFileName.Companion.toKotlinFileName
+import io.github.mfederczuk.buildconstants.datamodel.KotlinFileName.Companion.toKotlinFileNameOrNull
 import io.github.mfederczuk.buildconstants.datamodel.KotlinIdentifier
 import io.github.mfederczuk.buildconstants.datamodel.KotlinIdentifier.Companion.toKotlinIdentifier
 import io.github.mfederczuk.buildconstants.datamodel.ObjectDetails
 import io.github.mfederczuk.buildconstants.datamodel.PackageContents
 import io.github.mfederczuk.buildconstants.datamodel.Visibility
+import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.FileContentsBuilder
 import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.PackageContentsBuilder
 import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.obj.ObjectContentsBuilder
-import io.github.mfederczuk.buildconstants.datamodel.buildingdsl.obj.ObjectDefiner.DataKeyword
 import io.github.mfederczuk.buildconstants.internal.KotlinPackageName
 import io.github.mfederczuk.buildconstants.internal.KotlinPackageName.Companion.toKotlinPackageName
 import io.github.mfederczuk.buildconstants.internal.foldProviders
@@ -25,50 +29,10 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 	private class OpenState(val providerFactory: ProviderFactory) {
 		val subPackageContentsBuilders: MutableMap<KotlinIdentifier, PackageContentsBuilderImpl> = hashMapOf()
 		val objects: MutableMap<KotlinIdentifier, Provider<ObjectDetails>> = mutableMapOf()
+		val files: MutableMap<KotlinFileName, Provider<FileContents>> = mutableMapOf()
 	}
 
 	private var state: OpenState? = OpenState(providerFactory)
-
-	// region DSL
-
-	override val public: PublicKeyword =
-		object : PublicKeyword {
-
-			override val data: DataKeyword =
-				object : DataKeyword {
-
-					override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
-						this@PackageContentsBuilderImpl.defineObject(
-							visibility = Visibility.Public,
-							isData = true,
-							name = name,
-							action = action,
-						)
-					}
-				}
-
-			override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
-				this@PackageContentsBuilderImpl.defineObject(
-					visibility = Visibility.Public,
-					isData = false,
-					name = name,
-					action = action,
-				)
-			}
-		}
-
-	override val data: DataKeyword =
-		object : DataKeyword {
-
-			override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
-				this@PackageContentsBuilderImpl.defineObject(
-					visibility = Visibility.Internal,
-					isData = true,
-					name = name,
-					action = action,
-				)
-			}
-		}
 
 	override fun pkg(name: String): PackageContentsBuilder {
 		val name: KotlinPackageName = name.toKotlinPackageName()
@@ -80,23 +44,19 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 			)
 	}
 
-	override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
-		this.defineObject(
-			visibility = Visibility.Internal,
-			isData = false,
-			name = name,
-			action = action,
-		)
-	}
-
-	// endregion
-
 	private fun getSubPackageContentsBuilder(name: KotlinIdentifier): PackageContentsBuilderImpl {
 		val state: OpenState = this.getOpenState()
 
 		return state.subPackageContentsBuilders.computeIfAbsent(name) {
 			PackageContentsBuilderImpl(providerFactory = state.providerFactory)
 		}
+	}
+
+	override fun file(name: String, action: FileContentsBuilder.() -> Unit) {
+		val name: KotlinFileName = name.toKotlinFileName()
+
+		val state: OpenState = this.getOpenState()
+		TODO("Not yet implemented")
 	}
 
 	private fun defineObject(
@@ -145,7 +105,13 @@ internal class PackageContentsBuilderImpl(providerFactory: ProviderFactory) : Pa
 			objects
 				.foldProviders(providerFactory = state.providerFactory)
 
-		return subPackagesProvider.zip(objectsProvider, ::PackageContents)
+		return subPackagesProvider
+			.zip(objectsProvider) {
+				subPackages: ImmutableMap<KotlinIdentifier, PackageContents>,
+				objects: ImmutableMap<KotlinIdentifier, ObjectDetails>,
+				->
+				PackageContents(subPackages)
+			}
 	}
 
 	private fun getOpenState(): OpenState {

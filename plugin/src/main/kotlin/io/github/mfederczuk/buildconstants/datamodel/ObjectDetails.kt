@@ -29,7 +29,7 @@ public class ObjectDetails(
 	visibility: Visibility,
 	isData: Boolean,
 	entries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails>,
-) : ObjectEntryDetails, Serializable {
+) : ObjectEntryDetails, FileEntryDetails, Serializable {
 
 	public var visibility: Visibility = visibility
 		private set

@@ -25,17 +25,17 @@ import java.util.Objects
 
 public class PackageContents(
 	subPackages: ImmutableMap<KotlinIdentifier, PackageContents>,
-	objects: ImmutableMap<KotlinIdentifier, ObjectDetails>,
+	files: ImmutableMap<KotlinFileName, FileContents>,
 ) : Serializable {
 
 	init {
-		validatePackageContents(subPackages, objects)
+		validatePackageContents(subPackages, files)
 	}
 
 	public var subPackages: ImmutableMap<KotlinIdentifier, PackageContents> = subPackages
 		private set
 
-	public var objects: ImmutableMap<KotlinIdentifier, ObjectDetails> = objects
+	public var files: ImmutableMap<KotlinFileName, FileContents> = files
 		private set
 
 	// region Serializable
@@ -43,7 +43,7 @@ public class PackageContents(
 	@Throws(IOException::class)
 	private fun writeObject(out: ObjectOutputStream) {
 		out.writeObject(LinkedHashMap(this.subPackages))
-		out.writeObject(LinkedHashMap(this.objects))
+		out.writeObject(LinkedHashMap(this.files))
 	}
 
 	@Throws(IOException::class, ClassNotFoundException::class)
@@ -51,9 +51,9 @@ public class PackageContents(
 		@Suppress("UNCHECKED_CAST")
 		this.subPackages = (`in`.readObject() as Map<KotlinIdentifier, PackageContents>).toImmutableMap()
 		@Suppress("UNCHECKED_CAST")
-		this.objects = (`in`.readObject() as Map<KotlinIdentifier, ObjectDetails>).toImmutableMap()
+		this.files = (`in`.readObject() as Map<KotlinFileName, FileContents>).toImmutableMap()
 
-		validatePackageContents(this.subPackages, this.objects)
+		validatePackageContents(this.subPackages, this.files)
 	}
 
 	// endregion
@@ -66,20 +66,20 @@ public class PackageContents(
 
 	private fun equals(other: PackageContents): Boolean {
 		return (this.subPackages == other.subPackages) &&
-			(this.objects == other.objects)
+			(this.files == other.files)
 	}
 
 	override fun hashCode(): Int {
 		return Objects.hash(
 			this.subPackages,
-			this.objects,
+			this.files,
 		)
 	}
 
 	override fun toString(): String {
 		return "PackageContents(" +
 			"subPackages = ${this.subPackages}, " +
-			"objects = ${this.objects}" +
+			"files = ${this.files}" +
 			")"
 	}
 
@@ -88,9 +88,9 @@ public class PackageContents(
 
 private fun validatePackageContents(
 	subPackages: ImmutableMap<KotlinIdentifier, PackageContents>,
-	objects: ImmutableMap<KotlinIdentifier, ObjectDetails>,
+	files: ImmutableMap<KotlinFileName, FileContents>,
 ) {
-	require(subPackages.isNotEmpty() || objects.isNotEmpty()) {
+	require(subPackages.isNotEmpty() || files.isNotEmpty()) {
 		"A package must not be empty"
 	}
 

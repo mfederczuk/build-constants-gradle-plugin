@@ -11,7 +11,7 @@ import java.util.Objects
 public class PropertyDetails(
 	public val visibility: Visibility,
 	public val typedValue: TypedValue,
-) : ObjectEntryDetails, Serializable {
+) : ObjectEntryDetails, FileEntryDetails, Serializable {
 
 	// region equals(), hashCode() and toString()
 

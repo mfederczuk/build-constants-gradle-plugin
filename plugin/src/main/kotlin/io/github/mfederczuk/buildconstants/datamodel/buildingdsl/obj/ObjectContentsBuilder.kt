@@ -17,7 +17,7 @@ public abstract class ObjectContentsBuilder : ObjectDefiner, PropertyDefiner {
 	public interface InternalKeyword : ObjectDefiner, PropertyDefiner {
 
 		/**
-		 * Defines a new internal nested object with the name [name].
+		 * Defines a new internal nested object with the name [name] in this object.
 		 *
 		 * The contents of the object are configured by [action].
 		 *
@@ -42,7 +42,7 @@ public abstract class ObjectContentsBuilder : ObjectDefiner, PropertyDefiner {
 	public abstract val internal: InternalKeyword
 
 	/**
-	 * Defines a new public nested object with the name [name].
+	 * Defines a new public nested object with the name [name] in this object.
 	 *
 	 * The contents of the object are configured by [action].
 	 *

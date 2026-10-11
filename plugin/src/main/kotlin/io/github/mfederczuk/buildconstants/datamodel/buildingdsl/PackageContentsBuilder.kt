@@ -15,17 +15,35 @@ import kotlin.contracts.contract
 public abstract class PackageContentsBuilder : ObjectDefiner {
 
 	@PackageContentsBuilderDsl
-	public interface PublicKeyword : ObjectDefiner {
+	public inner class PublicKeyword : ObjectDefiner {
+
+		override val data: ObjectDefiner.DataKeyword =
+			object : ObjectDefiner.DataKeyword {
+
+				override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+					this@PackageContentsBuilder.file(name = "$name.kt") { public.data.obj(name, action) }
+				}
+			}
 
 		/**
 		 * Defines a new public object with the name [name] in this package.
 		 *
 		 * The contents of the object are configured by [action].
 		 */
-		override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit)
+		override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+			this@PackageContentsBuilder.file(name = "$name.kt") { public.obj(name, action) }
+		}
 	}
 
-	public abstract val public: PublicKeyword
+	public val public: PublicKeyword = this.PublicKeyword()
+
+	override val data: ObjectDefiner.DataKeyword =
+		object : ObjectDefiner.DataKeyword {
+
+			override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+				this@PackageContentsBuilder.file(name = "$name.kt") { data.obj(name, action) }
+			}
+		}
 
 	public abstract fun pkg(name: String): PackageContentsBuilder
 
@@ -39,12 +57,25 @@ public abstract class PackageContentsBuilder : ObjectDefiner {
 	}
 
 	/**
+	 * Defines a new file with the name [name] in this package.
+	 *
+	 * The contents of the file are configured by [action].
+	 *
+	 * If the only declaration in the file is an object, then the function [obj()][obj] can be used as a shortcut.
+	 */
+	public abstract fun file(name: String, action: FileContentsBuilder.() -> Unit)
+
+	/**
 	 * Defines a new internal object with the name [name] in this package.
 	 *
 	 * The contents of the object are configured by [action].
 	 *
 	 * To define a *public* object, use `public.obj(name) { ... }`, to define a *data* object, use
 	 * `data.obj(name) { ... }`, and to define *public data* object, use `public.data.obj(name) { ... }`.
+	 *
+	 * @see file
 	 */
-	abstract override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit)
+	final override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit) {
+		this.file(name = "$name.kt") { obj(name, action) }
+	}
 }
