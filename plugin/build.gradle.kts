@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Michael Federczuk
- * SPDX-License-Identifier: MPL-2.0 AND Apache-2.0
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -90,15 +90,9 @@ publishing {
 
 				licenses {
 					license {
-						name = "MPL-2.0"
-						url = "https://www.mozilla.org/media/MPL/2.0/index.txt"
-						comments = "Mozilla Public License 2.0"
-						distribution = "repo"
-					}
-					license {
-						name = "Apache-2.0"
-						url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-						comments = "The Apache License, Version 2.0"
+						name = "GPL-3.0-or-later"
+						url = "https://www.gnu.org/licenses/gpl-3.0.txt"
+						comments = "GNU General Public License v3.0 or later"
 						distribution = "repo"
 					}
 				}
