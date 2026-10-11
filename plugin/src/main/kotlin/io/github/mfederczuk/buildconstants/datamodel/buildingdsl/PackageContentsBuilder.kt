@@ -43,7 +43,8 @@ public abstract class PackageContentsBuilder : ObjectDefiner {
 	 *
 	 * The contents of the object are configured by [action].
 	 *
-	 * To define a *public* object, use `public.obj(name) { ... }`.
+	 * To define a *public* object, use `public.obj(name) { ... }`, to define a *data* object, use
+	 * `data.obj(name) { ... }`, and to define *public data* object, use `public.data.obj(name) { ... }`.
 	 */
 	abstract override fun obj(name: String, action: ObjectContentsBuilder.() -> Unit)
 }

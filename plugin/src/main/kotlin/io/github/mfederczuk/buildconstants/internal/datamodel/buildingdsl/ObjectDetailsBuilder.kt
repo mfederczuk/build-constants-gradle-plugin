@@ -21,6 +21,7 @@ import org.gradle.api.provider.ProviderFactory
 internal class ObjectDetailsBuilder(
 	providerFactory: ProviderFactory,
 	private val visibility: Visibility,
+	private val isData: Boolean,
 ) : ObjectContentsBuilder() {
 
 	private class OpenState(val providerFactory: ProviderFactory) {
@@ -57,6 +58,7 @@ internal class ObjectDetailsBuilder(
 			.map { properties: ImmutableMap<KotlinIdentifier, PropertyDetails> ->
 				ObjectDetails(
 					visibility = this.visibility,
+					isData = this.isData,
 					properties = properties,
 				)
 			}

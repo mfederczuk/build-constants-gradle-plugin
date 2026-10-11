@@ -25,10 +25,14 @@ import java.util.Objects
 
 public class ObjectDetails(
 	visibility: Visibility,
+	isData: Boolean,
 	properties: ImmutableMap<KotlinIdentifier, PropertyDetails>,
 ) : Serializable {
 
 	public var visibility: Visibility = visibility
+		private set
+
+	public var isData: Boolean = isData
 		private set
 
 	public var properties: ImmutableMap<KotlinIdentifier, PropertyDetails> = properties
@@ -39,12 +43,14 @@ public class ObjectDetails(
 	@Throws(IOException::class)
 	private fun writeObject(out: ObjectOutputStream) {
 		out.writeInt(this.visibility.ordinal)
+		out.writeBoolean(this.isData)
 		out.writeObject(LinkedHashMap(this.properties))
 	}
 
 	@Throws(IOException::class, ClassNotFoundException::class)
 	private fun readObject(`in`: ObjectInputStream) {
 		this.visibility = Visibility.entries[`in`.readInt()]
+		this.isData = `in`.readBoolean()
 		@Suppress("UNCHECKED_CAST")
 		this.properties = (`in`.readObject() as Map<KotlinIdentifier, PropertyDetails>).toImmutableMap()
 	}
@@ -59,12 +65,14 @@ public class ObjectDetails(
 
 	private fun equals(other: ObjectDetails): Boolean {
 		return (this.visibility == other.visibility) &&
+			(this.isData == other.isData) &&
 			(this.properties == other.properties)
 	}
 
 	override fun hashCode(): Int {
 		return Objects.hash(
 			this.visibility,
+			this.isData,
 			this.properties,
 		)
 	}
@@ -72,6 +80,7 @@ public class ObjectDetails(
 	override fun toString(): String {
 		return "ObjectDetails(" +
 			"visibility = ${this.visibility}, " +
+			"isData = ${this.isData}, " +
 			"properties = ${this.properties}" +
 			")"
 	}
