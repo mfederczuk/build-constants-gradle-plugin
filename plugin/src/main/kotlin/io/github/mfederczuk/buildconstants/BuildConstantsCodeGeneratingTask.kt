@@ -25,6 +25,9 @@ import com.squareup.kotlinpoet.U_BYTE
 import com.squareup.kotlinpoet.U_INT
 import com.squareup.kotlinpoet.U_LONG
 import com.squareup.kotlinpoet.U_SHORT
+import io.github.mfederczuk.buildconstants.datamodel.FileContents
+import io.github.mfederczuk.buildconstants.datamodel.FileEntryDetails
+import io.github.mfederczuk.buildconstants.datamodel.KotlinFileName
 import io.github.mfederczuk.buildconstants.datamodel.KotlinIdentifier
 import io.github.mfederczuk.buildconstants.datamodel.ObjectDetails
 import io.github.mfederczuk.buildconstants.datamodel.ObjectEntryDetails
@@ -50,10 +53,10 @@ import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
-private data class Object(
+private data class File(
 	val packageName: KotlinPackageName?,
-	val name: KotlinIdentifier,
-	val details: ObjectDetails,
+	val name: KotlinFileName,
+	val contents: FileContents,
 )
 
 @CacheableTask
@@ -96,58 +99,50 @@ private fun generateFiles(rootPackageContents: PackageContents, outputDirectoryP
 	@OptIn(ExperimentalPathApi::class)
 	outputDirectoryPath.deleteRecursively()
 
-	for (`object`: Object in rootPackageContents.collectObjectsRecursively()) {
+	for (file: File in rootPackageContents.collectFilesRecursively()) {
 		val fileSpec: FileSpec =
-			createObjectFileSpec(
-				packageName = `object`.packageName,
-				objectVisibility = `object`.details.visibility,
-				isDataObject = `object`.details.isData,
-				objectName = `object`.name,
-				objectEntries = `object`.details.entries,
+			createFileSpec(
+				packageName = file.packageName,
+				name = file.name,
+				contents = file.contents,
 			)
 
 		fileSpec.writeTo(directory = outputDirectoryPath)
 	}
 }
 
-private fun PackageContents.collectObjectsRecursively(): Sequence<Object> {
+private fun PackageContents.collectFilesRecursively(): Sequence<File> {
 	return sequence {
-		val rootPackageObjects: List<Object> = this@collectObjectsRecursively.objects
-			.map { (objectName: KotlinIdentifier, objectDetails: ObjectDetails) ->
-				Object(
+		val rootPackageFiles: List<File> = this@collectFilesRecursively.files
+			.map { (fileName: KotlinFileName, fileContents: FileContents) ->
+				File(
 					packageName = KotlinPackageName.Root,
-					name = objectName,
-					details = objectDetails,
+					name = fileName,
+					contents = fileContents,
 				)
 			}
-		yieldAll(rootPackageObjects)
+		yieldAll(rootPackageFiles)
 
-		this@collectObjectsRecursively.subPackages
+		this@collectFilesRecursively.subPackages
 			.forEach { (subPackageName: KotlinIdentifier, subPackagesContents: PackageContents) ->
-				val subPackageObjects: Sequence<Object> = subPackagesContents.collectObjectsRecursively()
-					.map { `object`: Object ->
+				val subPackageFiles: Sequence<File> = subPackagesContents.collectFilesRecursively()
+					.map { file: File ->
 						val packageName: KotlinPackageName =
-							if (`object`.packageName != null) {
-								subPackageName + `object`.packageName
+							if (file.packageName != null) {
+								subPackageName + file.packageName
 							} else {
 								subPackageName.toPackageName()
 							}
 
-						`object`.copy(packageName = packageName)
+						file.copy(packageName = packageName)
 					}
 
-				yieldAll(subPackageObjects)
+				yieldAll(subPackageFiles)
 			}
 	}
 }
 
-private fun createObjectFileSpec(
-	packageName: KotlinPackageName?,
-	objectVisibility: Visibility,
-	isDataObject: Boolean,
-	objectName: KotlinIdentifier,
-	objectEntries: ImmutableMap<KotlinIdentifier, ObjectEntryDetails>,
-): FileSpec {
+private fun createFileSpec(packageName: KotlinPackageName?, name: KotlinFileName, contents: FileContents): FileSpec {
 	val suppressAnnotationSpec: AnnotationSpec = AnnotationSpec.builder(Suppress::class)
 		.useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
 		.addMember("%S", "REDUNDANT_VISIBILITY_MODIFIER")
@@ -156,15 +151,42 @@ private fun createObjectFileSpec(
 		.addMember("%S", "ConstPropertyName")
 		.build()
 
-	return FileSpec
-		.get(
+	var builder: FileSpec.Builder = FileSpec
+		.builder(
 			packageName = packageName?.toString().orEmpty(),
-			typeSpec = createObjectTypeSpec(objectVisibility, isDataObject, objectName, objectEntries),
+			fileName = name.toString(),
 		)
-		.toBuilder()
 		.addFileComment("This file was automatically generated. DO NOT EDIT!")
 		.addAnnotation(suppressAnnotationSpec)
-		.build()
+
+	for ((entryName: KotlinIdentifier, entryDetails: FileEntryDetails) in contents.entries) {
+		builder = when (entryDetails) {
+			is ObjectDetails -> {
+				val objectTypeSpec: TypeSpec =
+					createObjectTypeSpec(
+						visibility = entryDetails.visibility,
+						isData = entryDetails.isData,
+						name = entryName,
+						entries = entryDetails.entries,
+					)
+
+				builder.addType(objectTypeSpec)
+			}
+
+			is PropertyDetails -> {
+				val propertySpec: PropertySpec =
+					createPropertySpec(
+						visibility = entryDetails.visibility,
+						name = entryName,
+						typedValue = entryDetails.typedValue,
+					)
+
+				builder.addProperty(propertySpec)
+			}
+		}
+	}
+
+	return builder.build()
 }
 
 private fun createObjectTypeSpec(
