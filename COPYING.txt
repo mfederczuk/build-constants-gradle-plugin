@@ -31,10 +31,6 @@ Correct attribution should be found somewhere in these files.
 
 The individual licenses, used in this repository, can be found in the 'LICENSES' directory and are also listed here:
 
-        Full name:        Apache License 2.0
-        Short identifier: Apache-2.0
-        Text file:        LICENSES/Apache-2.0.txt
-
         Full name:        Creative Commons Attribution Share Alike 4.0 International
         Short identifier: CC-BY-SA-4.0
         Text file:        LICENSES/CC-BY-SA-4.0.txt
@@ -43,6 +39,6 @@ The individual licenses, used in this repository, can be found in the 'LICENSES'
         Short identifier: CC0-1.0
         Text file:        LICENSES/CC0-1.0.txt
 
-        Full name:        Mozilla Public License 2.0
-        Short identifier: MPL-2.0
-        Text file:        LICENSES/MPL-2.0.txt
+        Full name:        GNU General Public License v3.0 or later
+        Short identifier: GPL-3.0-or-later
+        Text file:        LICENSES/GPL-3.0.txt
