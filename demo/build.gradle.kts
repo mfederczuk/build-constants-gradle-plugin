@@ -11,8 +11,6 @@ plugins {
 	id("io.github.mfederczuk.build-constants")
 }
 
-version = "0.1.0"
-
 application {
 	mainClass = "io.github.mfederczuk.buildconstants.demo.Main"
 }
