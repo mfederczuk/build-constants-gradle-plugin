@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2024 Michael Federczuk
- * SPDX-License-Identifier: MPL-2.0 AND Apache-2.0
+ * Copyright (c) 2026 Michael Federczuk
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -8,27 +8,41 @@ import java.net.URI
 
 plugins {
 	`kotlin-dsl`
-	id("com.gradle.plugin-publish") version "1.2.1"
+	id("com.gradle.plugin-publish")
 }
 
 group = "io.github.mfederczuk"
 version = "0.1.0-indev02"
 
+val projectJvmTarget: JvmTarget = JvmTarget.JVM_17
+
 java {
-	targetCompatibility = JavaVersion.VERSION_1_8
-	sourceCompatibility = targetCompatibility
+	val projectJavaCompatibilityVersion: JavaVersion = projectJvmTarget.toJavaVersion()
+	targetCompatibility = projectJavaCompatibilityVersion
+	sourceCompatibility = projectJavaCompatibilityVersion
 }
 
 kotlin {
-	compilerOptions {
-		jvmTarget = JvmTarget.fromTarget(java.targetCompatibility.toString())
-	}
-
 	explicitApi()
+
+	compilerOptions {
+		jvmTarget = projectJvmTarget
+
+		// <https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0412-unused-return-value-checker.md>
+		freeCompilerArgs.add("-Xreturn-value-checker=full")
+
+		extraWarnings = true
+		allWarningsAsErrors = findProperty("allWarningsAsErrors")
+			?.toString()
+			.orEmpty()
+			.ifEmpty { "false" }
+			.toBooleanStrict()
+	}
 }
 
 dependencies {
-	implementation("com.squareup:kotlinpoet:1.17.0")
+	api("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.2")
+	implementation("com.squareup:kotlinpoet:2.4.0")
 }
 
 // region publishing
@@ -76,15 +90,9 @@ publishing {
 
 				licenses {
 					license {
-						name = "MPL-2.0"
-						url = "https://www.mozilla.org/media/MPL/2.0/index.txt"
-						comments = "Mozilla Public License 2.0"
-						distribution = "repo"
-					}
-					license {
-						name = "Apache-2.0"
-						url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-						comments = "The Apache License, Version 2.0"
+						name = "GPL-3.0-or-later"
+						url = "https://www.gnu.org/licenses/gpl-3.0.txt"
+						comments = "GNU General Public License v3.0 or later"
 						distribution = "repo"
 					}
 				}
@@ -118,3 +126,7 @@ publishing {
 }
 
 // endregion
+
+fun JvmTarget.toJavaVersion(): JavaVersion {
+	return JavaVersion.toVersion(this.target)
+}

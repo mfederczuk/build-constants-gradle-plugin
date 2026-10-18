@@ -1,5 +1,5 @@
 <!--
-  Copyright (c) 2024 Michael Federczuk
+  Copyright (c) 2026 Michael Federczuk
   SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
@@ -28,116 +28,74 @@ Package, visibility and name of the generated Kotlin objects are configurable.
 Apply the plugin to your Gradle project and configure like so:
 
 ```kotlin
-import io.github.mfederczuk.buildconstants.ConstantValue
-import io.github.mfederczuk.buildconstants.Visibility
-
 plugins {
-	id("io.github.mfederczuk.build-constants") version "0.1.0-indev02"
+    id("io.github.mfederczuk.build-constants") version "0.1.0-indev02"
 }
 
-buildConstants {
-	objects {
-		// The internal ID name used for naming
-		// the task that generates the Kotlin object.
-		//         |
-		//         V
-		register("main") {
-			packageName = "org.example"
+buildConstants.pkg("com.example") {
+    val isDebugProvider: Provider<Boolean> =
+        project.providers.gradleProperty("debug")
+            .map(String::toBoolean)
+            .orElse(false)
 
-			// Configuring the visibility is optional.
-			// The default is `internal`.
-			visibility = Visibility.PUBLIC
+    obj("BuildConstants") {
+        // Project.getVersion()'s return type is `java.lang.Object`, which is
+        // why the toString() call is necessary.
+        prop("VERSION").stringValue = project.version.toString()
 
-			objectName = "BuildConstants"
+        // Instances of Gradle's `org.gradle.api.provider.Provider` type are
+        // also accepted for lazy evaluation.
+        prop("IS_DEBUG").booleanValue = isDebugProvider
+    }
 
-			constants {
-				// The identifier of the constant
-				// as it will be generated.
-				//           |
-				//           V
-				register("VERSION") {
-					// Project.getVersion()'s return type
-					// is `java.lang.Object`, which is why
-					// the toString() call is necessary.
-					val s = project.version.toString()
-					value = ConstantValue.String(s)
-				}
+    pkg("api") {
+        // The default visibility for objects is internal.
+        // To make an object public instead, the obj() call must be prefixed
+        // with `public.`
+        public.obj("ApiConstants") {
+            prop("TOKEN").stringValue = isDebugProvider
+                .map { isDebug: Boolean ->
+                    if (isDebug) {
+                        "debug token"
+                    } else {
+                        "production token"
+                    }
+                }
+        }
 
-				register("BUILD_TIME") {
-					// Put values that should be computed
-					// lazily inside a provider to make
-					// sure that they only get evaluated
-					// when the value is queried.
-					value = project.providers.provider {
-						val l = Instant.now().epochSecond
-						ConstantValue.Long(l)
-					}
-				}
-			}
-		}
-
-		// Register more objects here.
-	}
+        pkg("foo.bar").public.data.obj("Baz") {
+            // ...
+        }
+    }
 }
 ```
 
-This configuration will result two tasks being registered in the project (both in the task group `build`):
-
-* `:generateConstantsObjectMain` — Generates the single object that was configured (see below for an example)
-* `:generateConstantsObjects` — Executes all other `:generateConstantsObject*` tasks
+To generate the objects, either execute the task `:generateBuildConstantsCode` directly, or simply build the project
+(by executing the task `:assemble`).  
+The above configuration will result in the following files being generated:
 
 ```kotlin
-package org.example
+package com.example
 
-public object BuildConstants {
-	public const val VERSION: String = "2.1.0-rc02"
+internal object BuildConstants {
+    public const val VERSION: String = "0.1.0"
 
-	public const val BUILD_TIME: Long = 3_137_977_200
+    public const val IS_DEBUG: Boolean = false
 }
 ```
 
-Now, the above configuration is pretty verbose and ugly, which is why a Kotlin DSL is provided that simplifies it a lot:
+```kotlin
+package com.example.api
+
+public object ApiConstants {
+    public const val TOKEN: String = "production token"
+}
+```
 
 ```kotlin
-import io.github.mfederczuk.buildconstants.Visibility
+package com.example.api.foo.bar
 
-buildConstants {
-	// Package name and object name is merged into one string.
-	// The internal ID name is automatically taken from the object name.
-	"org.example.BuildConstants" { // Kotlin magic
-		// The package name and object name can
-		// still be configured just like before.
-
-		// The visibility is still optional.
-		visibility = Visibility.PUBLIC
-
-		// The name of the generated constant is produced by
-		// transforming the delegated property's name into
-		// the equivalent UPPER_SNAKE_CASE name.
-		// The explicit type specified is required.
-		val version: String by constant {
-			// No need for the toString() call anymore,
-			// the DSL initializers will automatically do it.
-			// There's also no need to wrap the value in
-			// an instance of `ConstantValue` anymore.
-			project.version
-		}
-
-		// In case the automatically generated constant name is
-		// unwanted, or it should just be named differently, the name
-		// can still be explicitly configured with the following syntax:
-		val buildTime: Long by constant(name = "BUILD_TIME") {
-			// DSL initializers are wrapped
-			// in providers automatically.
-			Instant.now().epochSecond
-		}
-	}
-
-	// Explicit internal ID names can be given with the following syntax:
-	"..."(id = "main") {
-		...
-	}
-}
+public object Baz
 ```
 
 ## Contributing ##
@@ -146,6 +104,5 @@ Read through the [Contribution Guidelines](CONTRIBUTING.md) if you want to contr
 
 ## License ##
 
-This plugin is licensed under both the [**Mozilla Public License 2.0**](LICENSES/MPL-2.0.txt) AND
-the [**Apache License 2.0**](LICENSES/Apache-2.0.txt).  
+This plugin is licensed under both the [**GNU General Public License v3.0 or later**](LICENSES/GPL-3.0.txt).  
 For more information about copying and licensing, see the [`COPYING.txt`](COPYING.txt) file.

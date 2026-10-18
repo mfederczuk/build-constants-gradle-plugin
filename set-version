@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+# -*- python -*-
+# vim: set syntax=python
+
+# Copyright (c) 2026 Michael Federczuk
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import re
+import sys
+from pathlib import Path
+from re import Match, Pattern
+from time import localtime, struct_time
+
+# <https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string>
+_SEMVER_2_0_0_PATTERN: Pattern[str] = \
+	re.compile(
+		r"(?P<major>0|[1-9]\d*)\."
+		r"(?P<minor>0|[1-9]\d*)\."
+		r"(?P<patch>0|[1-9]\d*)"
+		r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+		r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?",
+	)
+
+_CHANGELOG_RELEASE_HEADLINE_PATTERN: Pattern[str] = \
+	re.compile(
+		r"^##\s*\[v(?P<version>" + _SEMVER_2_0_0_PATTERN.pattern + r")]\s*-\s*\d+-\d+-\d+\s*(?:##)?$",
+		re.MULTILINE,
+	)
+
+
+def _main() -> int:
+	match sys.argv:
+		case [argv0]:
+			print(f"{argv0}: missing argument: <version>", file=sys.stderr)
+			return 2
+		case [argv0, version]:
+			if version == "":
+				print(f"{argv0}: argument must not be empty", file=sys.stderr)
+				return 2
+
+			if _SEMVER_2_0_0_PATTERN.fullmatch(version) is None:
+				print(f"{argv0}: {version}: invalid SemVer version string", file=sys.stderr)
+				return 2
+		case [argv0, _, *excess]:
+			print(f"{argv0}: too many arguments: {len(excess)}", file=sys.stderr)
+			return 2
+		case _:
+			raise RuntimeError(f"Unexpected sys.argv: {sys.argv}")
+
+	script_dir_path: Path = Path(__file__).parent
+
+	_replace_in_file(
+		script_dir_path / "README.md",
+		("{{VERSION}}", version),
+		("{{VERSION_SHIELDS_IO_SLUG}}", version.replace("-", "--")),
+	)
+
+	_replace_in_file(
+		script_dir_path / "plugin" / "build.gradle.kts",
+		("\"trunk-SNAPSHOT\"", f"\"{version}\""),
+	)
+	_replace_in_file(
+		script_dir_path / "demo" / "build.gradle.kts",
+		("\"trunk-SNAPSHOT\"", f"\"{version}\""),
+	)
+
+	_adjust_changelog_file(version)
+
+	return 0
+
+
+def _replace_in_file(file_path: Path, *replacements: tuple[str, str]) -> None:
+	contents: str = file_path.read_text(encoding="utf-8")
+
+	search: str
+	replacement: str
+	for search, replacement in replacements:
+		contents = contents.replace(search, replacement)
+
+	file_path.write_text(contents, encoding="utf-8")
+
+
+def _adjust_changelog_file(version: str) -> None:
+	file_path: Path = Path(__file__).parent / "CHANGELOG.md"
+
+	contents: str
+	try:
+		contents = file_path.read_text(encoding="utf-8")
+	except FileNotFoundError:
+		contents = ""
+
+	contents = _adjust_changelog_contents(contents, version)
+
+	file_path.write_text(contents, encoding="utf-8")
+
+
+def _adjust_changelog_contents(contents: str, version: str) -> str:
+	today: struct_time = localtime()
+
+	today_str: str = \
+		"-".join((
+			str(today.tm_year).zfill(4),
+			str(today.tm_mon).zfill(2),
+			str(today.tm_mday).zfill(2),
+		))
+	release_headline: str = f"## [v{version}] - {today_str} ##"
+
+	release_footnote: str = \
+		f"[v{version}]: <https://github.com/mfederczuk/build-constants-gradle-plugin/releases/tag/v{version}>"
+
+	def repl_copyright_header(match: Match[str]) -> str:
+		return match[1] + str(today.tm_year)
+
+	contents = \
+		re.sub(
+			r"\b(copyright\s*\(c\)\s*)(\d+)\b",
+			repl_copyright_header,
+			contents,
+			flags=re.IGNORECASE | re.MULTILINE,
+		)
+
+	first_release_headline_match: Match[str] | None = _CHANGELOG_RELEASE_HEADLINE_PATTERN.search(contents)
+	if (first_release_headline_match is not None) and (first_release_headline_match["version"] != version):
+		first_release_headline_index: int = first_release_headline_match.start()
+
+		return contents[:first_release_headline_index] + \
+			f"{release_headline}\n\n" + \
+			f"{release_footnote}\n\n" + \
+			"TODO\n\n" + \
+			contents[first_release_headline_index:]
+
+	return contents
+
+
+if __name__ == "__main__":
+	sys.exit(_main())
